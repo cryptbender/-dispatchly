@@ -376,7 +376,7 @@ function Orders({T,orders,setOrders,token,toast,onScan}){
 
 function Inventory({T,products,setProducts,token,toast,onScan}){
   const[search,setSearch]=useState('');const[showAdd,setShowAdd]=useState(false);const[editP,setEditP]=useState(null);const[saving,setSaving]=useState(false);
-  const ef={name:'',sku:'',barcode:'',category:'Electronics',cost_price:'',selling_price:'',stock:'',min_stock:'10',gst:'18',supplier:'',emoji:'📦'};
+  const ef={name:'',sku:'',barcode:'',category:'Electronics',cost_price:'',selling_price:'',stock:'',min_stock:'10',gst:'18',supplier:'',emoji:'📦',photo_url:'',sizes:''};
   const[form,setForm]=useState({...ef});
   const low=products.filter(p=>Number(p.stock)<=Number(p.min_stock));
   const fil=products.filter(p=>!search||[p.name,p.sku,p.barcode||''].some(x=>x.toLowerCase().includes(search.toLowerCase())));
@@ -415,7 +415,9 @@ function Inventory({T,products,setProducts,token,toast,onScan}){
         return h('div',{key:p.id,className:'hc fu',style:{background:T.surf,border:'1.5px solid '+(isLow?'rgba(245,158,11,.35)':T.bdr),borderRadius:18,padding:20,boxShadow:T.sha,animationDelay:i*.04+'s',position:'relative'}},
           isLow&&h('div',{style:{position:'absolute',top:12,right:12,background:'rgba(245,158,11,.14)',color:C.amb,fontSize:10,fontWeight:700,padding:'3px 8px',borderRadius:8}},'⚠️ LOW'),
           h('div',{style:{display:'flex',alignItems:'flex-start',gap:12,marginBottom:14}},
-            h('div',{style:{width:46,height:46,borderRadius:13,background:C.ind+'14',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}},p.emoji),
+            p.photo_url
+              ?h('img',{src:p.photo_url,style:{width:46,height:46,borderRadius:13,objectFit:'cover',flexShrink:0,border:'1px solid '+T.bdr},onError:e=>{e.target.style.display='none';}})
+              :h('div',{style:{width:46,height:46,borderRadius:13,background:C.ind+'14',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,flexShrink:0}},p.emoji),
             h('div',{style:{flex:1,minWidth:0}},
               h('div',{style:{fontSize:14,fontWeight:700,color:T.txt,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}},p.name),
               h('div',{style:{fontSize:11,color:T.muted,fontFamily:'monospace'}},'SKU: '+p.sku),
@@ -426,9 +428,12 @@ function Inventory({T,products,setProducts,token,toast,onScan}){
             [['Stock',p.stock,isLow?C.amb:C.em],['₹',p.selling_price,T.txt],['Margin',mg+'%',C.ind]].map(function(x){var l=x[0];var v=x[1];var c=x[2];return h('div',{key:l,style:{textAlign:'center',background:T.s2,borderRadius:10,padding:'8px 4px'}},h('div',{style:{fontSize:14,fontWeight:800,color:c,fontFamily:"'Syne',sans-serif"}},v),h('div',{style:{fontSize:10,color:T.muted,marginTop:2}},l));})
           ),
           h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center'}},
-            h('span',{style:{fontSize:10.5,color:T.muted,background:T.inp,padding:'3px 8px',borderRadius:6}},p.category),
+            h('div',{style:{display:'flex',gap:4,flexWrap:'wrap',alignItems:'center'}},
+              h('span',{style:{fontSize:10.5,color:T.muted,background:T.inp,padding:'3px 8px',borderRadius:6}},p.category),
+              p.sizes&&p.sizes.split(',').filter(Boolean).map(sz=>h('span',{key:sz,style:{fontSize:10,color:C.ind,background:C.ind+'12',padding:'2px 6px',borderRadius:5,fontWeight:700}},sz))
+            ),
             h('div',{style:{display:'flex',gap:4}},
-              h(AB,{n:'edit',c:C.ind,onClick:function(){setEditP(p);setForm({name:p.name,sku:p.sku,barcode:p.barcode||'',category:p.category,cost_price:String(p.cost_price),selling_price:String(p.selling_price),stock:String(p.stock),min_stock:String(p.min_stock),gst:String(p.gst||18),supplier:p.supplier||'',emoji:p.emoji||'📦'});setShowAdd(true);},tip:'Edit'}),
+              h(AB,{n:'edit',c:C.ind,onClick:function(){setEditP(p);setForm({name:p.name,sku:p.sku,barcode:p.barcode||'',category:p.category,cost_price:String(p.cost_price),selling_price:String(p.selling_price),stock:String(p.stock),min_stock:String(p.min_stock),gst:String(p.gst||18),supplier:p.supplier||'',emoji:p.emoji||'📦',photo_url:p.photo_url||'',sizes:p.sizes||''});setShowAdd(true);},tip:'Edit'}),
               h(AB,{n:'trash',c:C.rose,onClick:()=>del(p),tip:'Delete'})
             )
           )
@@ -448,6 +453,20 @@ function Inventory({T,products,setProducts,token,toast,onScan}){
         h(FF,{l:'Min Stock',T},h('input',{value:form.min_stock,onChange:e=>setForm(p=>({...p,min_stock:e.target.value})),type:'number',style:iS(T)})),
         h(FF,{l:'GST %',T},h('input',{value:form.gst,onChange:e=>setForm(p=>({...p,gst:e.target.value})),type:'number',style:iS(T)})),
         h(FF,{l:'Supplier',T},h('input',{value:form.supplier,onChange:e=>setForm(p=>({...p,supplier:e.target.value})),style:iS(T)})),
+        h(FF,{l:'Photo URL (optional)',T,full:true},
+          h('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+            h('input',{value:form.photo_url,onChange:e=>setForm(p=>({...p,photo_url:e.target.value})),placeholder:'Paste image URL (https://...) or upload below',style:iS(T)}),
+            form.photo_url&&h('img',{src:form.photo_url,style:{width:80,height:80,borderRadius:10,objectFit:'cover',border:'2px solid '+T.bdr},onError:e=>e.target.style.display='none'})
+          )
+        ),
+        h(FF,{l:'Sizes Available',T,full:true},
+          h('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+            h('div',{style:{display:'flex',gap:6,flexWrap:'wrap'}},
+              ['S','M','L','XL','XXL','XXXL'].map(sz=>h('button',{key:sz,onClick:()=>{const cur=form.sizes?form.sizes.split(',').filter(Boolean):[];const has=cur.includes(sz);const next=has?cur.filter(x=>x!==sz):[...cur,sz];setForm(p=>({...p,sizes:next.join(',')}));},style:{padding:'6px 14px',borderRadius:20,border:'1.5px solid',cursor:'pointer',fontSize:12,fontWeight:700,borderColor:form.sizes&&form.sizes.split(',').includes(sz)?C.ind:T.bdr,background:form.sizes&&form.sizes.split(',').includes(sz)?C.ind+'18':'transparent',color:form.sizes&&form.sizes.split(',').includes(sz)?C.ind:T.muted,transition:'all .15s'}},sz))
+            ),
+            h('p',{style:{fontSize:11,color:T.muted}},form.sizes?'Selected: '+form.sizes:'No sizes selected (for non-clothing items)')
+          )
+        ),
         h(FF,{l:'Emoji',T},h('input',{value:form.emoji,onChange:e=>setForm(p=>({...p,emoji:e.target.value})),style:{...iS(T),textAlign:'center',fontSize:22}}))
       ),
       h('div',{style:{display:'flex',justifyContent:'flex-end',gap:10,marginTop:20}},
@@ -674,8 +693,6 @@ function Activity({T,token}){
 }
 
 function Settings({T,user,dark,setDark,toast,onLogout}){
-  const[apiUrl,setApiUrl]=useState('https://dispatchly-api.bbg222072.workers.dev');
-  const saveApi=()=>{toast('URL is hardcoded in the file — no change needed!','success');};
   return h('div',null,h(PH,{title:'Settings',sub:'Account & configuration',T}),
     h('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}},
       h('div',{style:{background:T.surf,border:'1px solid '+T.bdr,borderRadius:20,padding:24,boxShadow:T.sha}},
@@ -686,16 +703,25 @@ function Settings({T,user,dark,setDark,toast,onLogout}){
         ),
         h('button',{onClick:onLogout,style:{width:'100%',padding:'10px',borderRadius:10,background:C.rose+'0A',border:'1.5px solid '+C.rose+'33',color:C.rose,fontSize:13,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6}},h(Ic,{n:'logout',s:14,c:C.rose}),' Sign Out')
       ),
-      h('div',{style:{background:T.surf,border:'1px solid '+T.bdr,borderRadius:20,padding:24,boxShadow:T.sha}},
-        h('div',{style:{fontSize:16,fontWeight:700,color:T.txt,marginBottom:18}},'Configuration'),
-        h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid '+T.bdr,marginBottom:16}},h('span',{style:{fontSize:13,color:T.txt}},'🌙 Dark Mode'),h(Tog,{val:dark,onChange:setDark,T})),
-        h('label',{style:{fontSize:11,fontWeight:700,color:T.muted,textTransform:'uppercase',letterSpacing:'.5px',display:'block',marginBottom:6}},'Cloudflare Worker URL'),
-        h('div',{style:{display:'flex',gap:6,marginBottom:10}},
-          h('input',{value:apiUrl,onChange:e=>setApiUrl(e.target.value),placeholder:'https://dispatchly-api.xxx.workers.dev',style:{...iS(T),flex:1,fontSize:12}}),
-          h('button',{onClick:saveApi,style:{padding:'10px 12px',background:C.ind+'18',border:'none',borderRadius:10,color:C.ind,cursor:'pointer',fontSize:11,fontWeight:700}},'Save')
+      h('div',{style:{display:'flex',flexDirection:'column',gap:16}},
+        h('div',{style:{background:T.surf,border:'1px solid '+T.bdr,borderRadius:20,padding:24,boxShadow:T.sha}},
+          h('div',{style:{fontSize:16,fontWeight:700,color:T.txt,marginBottom:18}},'Configuration'),
+          h('div',{style:{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid '+T.bdr,marginBottom:16}},h('span',{style:{fontSize:13,color:T.txt}},'🌙 Dark Mode'),h(Tog,{val:dark,onChange:setDark,T})),
+          h('div',{style:{background:C.ind+'08',borderRadius:12,padding:12,fontSize:12,color:T.muted,lineHeight:1.7}},
+            'Your Worker: dispatchly-api.bbg222072.workers.dev'
+          )
         ),
-        h('div',{style:{background:C.ind+'08',borderRadius:12,padding:12,fontSize:12,color:T.muted,lineHeight:1.7}},
-          '1. Deploy worker.js to Cloudflare\n2. Paste your Worker URL above\n3. Click Save, then reload'
+        h('div',{style:{background:'linear-gradient(135deg,rgba(0,136,204,.12),rgba(0,136,204,.06))',border:'1px solid rgba(0,136,204,.25)',borderRadius:20,padding:24,boxShadow:T.sha}},
+          h('div',{style:{fontSize:16,fontWeight:700,color:T.txt,marginBottom:6}},'👨‍💻 Developer'),
+          h('div',{style:{fontSize:13,color:T.muted,marginBottom:16}},'Need help or custom features? Contact the developer.'),
+          h('a',{href:'https://t.me/crypbender',target:'_blank',style:{display:'flex',alignItems:'center',gap:10,padding:'12px 16px',background:'rgba(0,136,204,.15)',border:'1.5px solid rgba(0,136,204,.3)',borderRadius:14,textDecoration:'none',transition:'all .18s'},onMouseEnter:e=>{e.currentTarget.style.background='rgba(0,136,204,.25)';},onMouseLeave:e=>{e.currentTarget.style.background='rgba(0,136,204,.15)';}},
+            h('div',{style:{width:38,height:38,borderRadius:10,background:'#0088CC',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,flexShrink:0}},'✈️'),
+            h('div',null,
+              h('div',{style:{fontSize:14,fontWeight:700,color:'#40B3E0'}},'+crypbender'),
+              h('div',{style:{fontSize:12,color:T.muted}},'Telegram · Click to open chat')
+            ),
+            h('div',{style:{marginLeft:'auto',fontSize:18}},'→')
+          )
         )
       )
     )
